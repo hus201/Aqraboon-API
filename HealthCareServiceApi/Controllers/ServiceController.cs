@@ -741,7 +741,7 @@ namespace HealthCareServiceApi.Controllers
                     {
                         RequestId = req.Id,
                         UserId = user.Id,
-                        UserReportedId = req.SenderId,
+                        UserReportedId = (req.SenderId == user.Id) ? _service.UserId : req.SenderId,
                         Description = Evaluation ?? "تقييم سيئ !",
                         Type = _service.UserId == user.Id ? 2 : 1
                     };
