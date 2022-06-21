@@ -64,6 +64,7 @@ namespace HealthCareServiceApi.Controllers
                     Service.AgeFrom = _service.AgeFrom;
                     Service.AgeTo = _service.AgeTo;
                     Service.TypeId = _service.TypeId;
+                    Service.Gender = _service.Gender;
                     Service.Attachments = _service.Attachments;
                     ServiceUnit.Service.SaveChanges();
                 }
@@ -272,7 +273,7 @@ namespace HealthCareServiceApi.Controllers
                 Service _service = ServiceUnit.Service.GetUserBy(x => x.UserId == _acceptedRequest.VolunteerId && _req.SeviceTypeId == x.TypeId);
                 _req.ServiceId = _service.Id;
                 ServiceUnit.Request.SaveChanges();
-               AcceptedRequest AcceptedRequest = ServiceUnit.AcceptedRequest.Add(_acceptedRequest);
+                AcceptedRequest AcceptedRequest = ServiceUnit.AcceptedRequest.Add(_acceptedRequest);
                 return Ok(AcceptedRequest);
             }
             catch (Exception e)
@@ -342,11 +343,11 @@ namespace HealthCareServiceApi.Controllers
                     return BadRequest(new JsonResult(new { UserServices, RequestsInScope }));
                 }
                 List<Request> InScopeRequests = RequestsInScope.FindAll(x =>
-                UserServices.FirstOrDefault(e => e.TypeId == x.SeviceTypeId && x.SenderId != e.UserId && ((x.PAge <= e.AgeTo && x.PAge >= e.AgeFrom) || e.AgeFrom == -1)) != null &&
+                UserServices.FirstOrDefault(e => e.TypeId == x.SeviceTypeId && x.SenderId != e.UserId && ((e.Gender == x.PGender || e.Gender == 3) && (user.Gender == x.VGender || x.VGender == 3)) && ((x.PAge <= e.AgeTo && x.PAge >= e.AgeFrom) || e.AgeFrom == -1)) != null &&
                 (1 >= CalculateDistance(x.Lattiud, x.Longtiud, user.Lat, user.Lng)));
 
                 List<Request> AroundScopeRequests = RequestsInScope.FindAll(x =>
-               UserServices.FirstOrDefault(e => e.TypeId == x.SeviceTypeId && x.SenderId != e.UserId && ((x.PAge <= e.AgeTo && x.PAge >= e.AgeFrom) || e.AgeFrom == -1)) != null &&
+               UserServices.FirstOrDefault(e => e.TypeId == x.SeviceTypeId && ((e.Gender == x.PGender || e.Gender == 3) && (user.Gender == x.VGender || x.VGender == 3)) && x.SenderId != e.UserId && ((x.PAge <= e.AgeTo && x.PAge >= e.AgeFrom) || e.AgeFrom == -1)) != null &&
                (1 < CalculateDistance(x.Lattiud, x.Longtiud, user.Lat, user.Lng) && 3 >= CalculateDistance(x.Lattiud, x.Longtiud, user.Lat, user.Lng)));
 
                 foreach (Request request in InScopeRequests)
@@ -500,7 +501,7 @@ namespace HealthCareServiceApi.Controllers
         {
             try
             {
-                ServiceType type = ServiceUnit.ServiceType.GetUserBy(x => true);
+                ServiceType type = ServiceUnit.ServiceType.GetUserBy(x => x.Id == id);
                 return Ok(type);
             }
             catch (Exception e)
@@ -740,8 +741,8 @@ namespace HealthCareServiceApi.Controllers
                     {
                         RequestId = req.Id,
                         UserId = user.Id,
-                        UserReportedId = _service.UserId,
-                        Description = Evaluation ?? "Repost",
+                        UserReportedId = req.SenderId,
+                        Description = Evaluation ?? "تقييم سيئ !",
                         Type = _service.UserId == user.Id ? 2 : 1
                     };
                     ServiceUnit.Report.Add(_report);
@@ -869,6 +870,11 @@ namespace HealthCareServiceApi.Controllers
             try
             {
                 Service Service = ServiceUnit.Service.GetById(id);
+                try
+                {
+                    List<ServiceAttachment> att = ServiceUnit.ServiceAttachment.GetAll(x => x.ServiceId == Service.Id).ToList();
+                }
+                catch (Exception e) { }
                 return Ok(new JsonResult(new { Service }));
             }
             catch (Exception e)
