@@ -639,7 +639,7 @@ namespace HealthCareServiceApi.Controllers
                     UserReportedId = service.UserId,
                     Description = desc,
                     Date = new DateTime(),
-                    Type = 2 // servbice
+                    Type = (service.UserId == user.Id) ? 2 : 1
                 };
 
                 Report report = ServiceUnit.Report.Add(_report);
